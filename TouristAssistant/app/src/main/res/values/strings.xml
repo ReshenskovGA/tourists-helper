@@ -1,0 +1,59 @@
+<resources>
+    <string name="app_name">Помощник туриста</string>
+
+    <!-- Main Screen -->
+    <string name="title_tourist_assistant">Помощник туриста</string>
+    <string name="places">Места</string>
+    <string name="routes">Маршруты</string>
+    <string name="my_location">Мое местоположение</string>
+    <string name="build_route">Построить маршрут</string>
+    <string name="cancel">Отмена</string>
+
+    <!-- Places Screen -->
+    <string name="search_places">Поиск мест</string>
+    <string name="clear">Очистить</string>
+    <string name="all">Все</string>
+    <string name="tourist_attractions">Достопримечательности</string>
+    <string name="restaurants">Рестораны</string>
+    <string name="cafes">Кафе</string>
+    <string name="hotels">Отели</string>
+    <string name="shops">Магазины</string>
+    <string name="transport">Транспорт</string>
+    <string name="hospitals">Больницы</string>
+    <string name="pharmacies">Аптеки</string>
+    <string name="banks">Банки</string>
+    <string name="toilets">Туалеты</string>
+    <string name="other">Другое</string>
+    <string name="favorite">Избранное</string>
+
+    <!-- Routes Screen -->
+    <string name="saved_routes">Сохраненные маршруты</string>
+    <string name="no_saved_routes">Нет сохраненных маршрутов</string>
+    <string name="create_first_route">Создайте свой первый маршрут</string>
+    <string name="new_route">Новый маршрут</string>
+    <string name="route_name">Название маршрута</string>
+    <string name="description">Описание</string>
+    <string name="create">Создать</string>
+    <string name="distance">Расстояние</string>
+    <string name="duration">Время</string>
+    <string name="points">Точки</string>
+
+    <!-- Map Screen -->
+    <string name="route_mode">Режим построения маршрута</string>
+    <string name="location_permission_required">Требуется разрешение на местоположение</string>
+    <string name="location_permission_description">Для использования функции "Мое местоположение" и построения маршрутов</string>
+    <string name="request_permission">Запросить разрешение</string>
+    <string name="route_point">Точка маршрута</string>
+
+    <!-- Errors -->
+    <string name="error_loading_places">Не удалось загрузить места</string>
+    <string name="error_loading_routes">Не удалось загрузить маршруты</string>
+    <string name="error_calculating_route">Ошибка расчета маршрута</string>
+
+    <!-- Units -->
+    <string name="km">км</string>
+    <string name="min">мин</string>
+    <string name="hours">ч</string>
+
+    <string name="openrouteservice_api_key">eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjYxNjA4MWY3ODJjODQyMGNhZjg3Yzk4NDdjOWVmY2EwIiwiaCI6Im11cm11cjY0In0=</string>
+</resources>
