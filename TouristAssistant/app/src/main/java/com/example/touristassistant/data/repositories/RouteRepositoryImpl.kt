@@ -24,6 +24,11 @@ class RouteRepositoryImpl @Inject constructor(
 ) : RouteRepository {
 
     /**
+     * Рассчитывает маршрут между точками с промежуточными точками.
+     * Создает последовательность RoutePoint, вычисляет расстояние и время, генерирует полилинию.
+     *
+     * @param waypoints список промежуточных точек в формате (широта, долгота)
+     * @return Result с успешно рассчитанным маршрутом или ошибкой
      * @see RouteRepository.calculateRoute
      * @throws Exception если произошла ошибка при расчете маршрута
      */
@@ -37,10 +42,12 @@ class RouteRepositoryImpl @Inject constructor(
     ): Result<Route> {
         Log.i("RouteRepository", "Calculating route: start($startLat,$startLon) -> end($endLat,$endLon), waypoints: ${waypoints.size}")
         return try {
+            // Создание списка точек маршрута с определением типов
             val points = mutableListOf<RoutePoint>().apply {
                 add(RoutePoint(startLat, startLon, "Старт", RoutePointType.START))
                 Log.v("RouteRepository", "Added start point")
 
+                // Добавление промежуточных точек как WAYPOINT
                 waypoints.forEachIndexed { index, (lat, lon) ->
                     add(RoutePoint(lat, lon, "Точка ${index + 1}", RoutePointType.WAYPOINT))
                     Log.v("RouteRepository", "Added waypoint $index: ($lat,$lon)")
@@ -50,9 +57,12 @@ class RouteRepositoryImpl @Inject constructor(
                 Log.v("RouteRepository", "Added destination point")
             }
 
+            // Расчет общего расстояния (сумма расстояний между последовательными точками)
             val distance = calculateTotalDistance(points)
+            // Оценка времени прохождения на основе расстояния и средней скорости
             val duration = calculateEstimatedDuration(distance)
 
+            // Генерация строки полилинии для хранения в БД
             val polyline = generatePolyline(points)
 
             val routeName = if (points.size == 2) {
@@ -61,8 +71,9 @@ class RouteRepositoryImpl @Inject constructor(
                 "Маршрут через ${points.size - 2} точек"
             }
 
+            // Создание объекта маршрута
             val route = Route(
-                id = System.currentTimeMillis().toString(),
+                id = System.currentTimeMillis().toString(), // Уникальный ID на основе времени
                 name = routeName,
                 description = "Рассчитанный маршрут",
                 points = points,
@@ -80,8 +91,8 @@ class RouteRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Вычисляет общее расстояние маршрута.
-     *
+     * Вычисляет общее расстояние маршрута с использованием функции гаверсинусов.
+     * Использует LocationUtils.calculateDistance для точного расчета расстояния между точками.
      * @param points список точек маршрута
      * @return общее расстояние в метрах
      */

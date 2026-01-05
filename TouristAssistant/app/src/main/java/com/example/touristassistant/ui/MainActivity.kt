@@ -106,19 +106,11 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    /**
-     * Обрабатывает нажатие кнопки "Назад".
-     */
-
-    override fun onBackPressed() {
-        Log.d(TAG, "onBackPressed")
-        super.onBackPressed()
-    }
 }
 
 /**
- * Главный компонент приложения, управляющий навигацией.
- * Определяет граф навигации и переходы между экранами.
+ * Граф навигации приложения с анимациями переходов.
+ * Определяет три основных экрана (map, places, routes) и параметры переходов между ними.
  *
  * @return Composable-компонент приложения
  */
@@ -132,12 +124,14 @@ fun TouristAssistantApp() {
     NavHost(
         navController = navController,
         startDestination = "map",
+        // Глобальные анимации переходов (по умолчанию fade)
         enterTransition = { fadeIn(animationSpec = tween(300)) },
         exitTransition = { fadeOut(animationSpec = tween(300)) },
         popEnterTransition = { fadeIn(animationSpec = tween(300)) },
         popExitTransition = { fadeOut(animationSpec = tween(300)) }
     ) {
         composable(
+            // Экран карты с поддержкой параметров в URL
             route = "map?placeId={placeId}&routeId={routeId}&routeMode={routeMode}",
             arguments = listOf(
                 navArgument("placeId") {
@@ -159,6 +153,7 @@ fun TouristAssistantApp() {
             enterTransition = { fadeIn(animationSpec = tween(300)) },
             exitTransition = { fadeOut(animationSpec = tween(300)) }
         ) { backStackEntry ->
+            // Извлечение параметров из deep link
             val placeId = backStackEntry.arguments?.getString("placeId")
             val routeId = backStackEntry.arguments?.getString("routeId")
             val routeMode = backStackEntry.arguments?.getString("routeMode")
@@ -168,10 +163,13 @@ fun TouristAssistantApp() {
             MapScreen(
                 onPlacesClick = {
                     Log.i("TouristAssistantApp", "Navigating to places screen")
+
+                    // Навигация на экран мест с горизонтальной анимацией
                     navController.navigate("places")
                 },
                 onRoutesClick = {
                     Log.i("TouristAssistantApp", "Navigating to routes screen")
+                    // Навигация на экран маршрутов с горизонтальной анимацией
                     navController.navigate("routes")
                 },
                 selectedPlaceId = placeId,
@@ -184,19 +182,21 @@ fun TouristAssistantApp() {
             )
         }
 
+        // Экран мест с кастомной анимацией slide-in справа
         composable(
             "places",
             enterTransition = {
                 slideInHorizontally(
-                    initialOffsetX = { fullWidth -> fullWidth },
+                    initialOffsetX = { fullWidth -> fullWidth },// Начало за правой границей
                     animationSpec = tween(300)
                 )
             },
             exitTransition = { fadeOut(animationSpec = tween(300)) },
+            // Анимация возврата (pop) - slide-out влево
             popEnterTransition = { fadeIn(animationSpec = tween(300)) },
             popExitTransition = {
                 slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> -fullWidth },
+                    targetOffsetX = { fullWidth -> -fullWidth }, // Конец за левой границей
                     animationSpec = tween(300)
                 )
             }
@@ -205,7 +205,7 @@ fun TouristAssistantApp() {
             PlacesScreen(
                 onBackClick = {
                     Log.i("TouristAssistantApp", "Back from places screen")
-                    navController.popBackStack()
+                    navController.popBackStack() // Возврат на предыдущий экран
                 },
                 onPlaceClick = { place ->
                     Log.i("TouristAssistantApp", "Place clicked: ${place.name}, navigating to map")

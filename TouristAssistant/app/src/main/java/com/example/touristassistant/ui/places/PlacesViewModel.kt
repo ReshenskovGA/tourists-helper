@@ -35,16 +35,22 @@ class PlacesViewModel @Inject constructor(
         loadPlaces()
     }
 
+    /**
+     * Загрузка и фильтрация мест с использованием оператора combine.
+     * Объединяет три потока: все места, поисковый запрос и выбранную категорию.
+     * Выполняет фильтрацию в реальном времени при изменении любого из параметров.
+     */
     private fun loadPlaces() {
         Log.i("PlacesViewModel", "Loading places with filters...")
         viewModelScope.launch {
             _isLoading.value = true
             try {
                 combine(
-                    placesRepository.getAllPlaces(),
-                    _searchQuery,
-                    _selectedCategory
+                    placesRepository.getAllPlaces(), // Поток всех мест
+                    _searchQuery,                    // Поток поискового запроса
+                    _selectedCategory                // Поток выбранной категории
                 ) { allPlaces, query, category ->
+                    // Фильтрация по категории и поисковому запросу
                     Log.d("PlacesViewModel", "Filtering places: query='$query', category=$category")
                     val filtered = allPlaces.filter { place ->
                         val matchesCategory = category == null || place.type == category
@@ -53,7 +59,7 @@ class PlacesViewModel @Inject constructor(
                                 place.description.contains(query, ignoreCase = true) ||
                                 place.address.contains(query, ignoreCase = true)
                         matchesCategory && matchesSearch
-                    }.sortedByDescending { it.isFavorite }
+                    }.sortedByDescending { it.isFavorite } // Сортировка: избранное сверху
 
                     Log.d("PlacesViewModel", "Filter result: ${filtered.size} of ${allPlaces.size} places")
                     filtered

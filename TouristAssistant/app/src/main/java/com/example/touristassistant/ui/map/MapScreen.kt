@@ -60,6 +60,7 @@ fun MapScreen(
     routeMode: String? = null,
     onRouteViewComplete: () -> Unit = {}
 ) {
+    // Инициализация состояний и зависимостей
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val viewModel: MapViewModel = hiltViewModel()
@@ -68,6 +69,7 @@ fun MapScreen(
 
     Log.d("MapScreen", "Compose function called with params: selectedPlaceId=$selectedPlaceId, selectedRouteId=$selectedRouteId, routeMode=$routeMode")
 
+    // Состояния для управления разрешениями
     var hasLocationPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -79,9 +81,11 @@ fun MapScreen(
 
     Log.d("MapScreen", "Location permission granted: $hasLocationPermission")
 
+    // Launcher для запроса разрешений с обработкой результата
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
         onResult = { permissions ->
+            // Обработка результатов запроса разрешений
             val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
             val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
             hasLocationPermission = fineLocationGranted || coarseLocationGranted
@@ -98,6 +102,7 @@ fun MapScreen(
     var calculatedRoute by remember { mutableStateOf<Route?>(null) }
     var selectedPointForRoute by remember { mutableStateOf<GeoPoint?>(null) }
 
+    // Состояния для управления маршрутами
     var routePoints by remember { mutableStateOf<List<GeoPoint>>(emptyList()) }
     var isRouteBuildingFinished by remember { mutableStateOf(false) }
     var draggedMarkerIndex by remember { mutableStateOf<Int?>(null) }
@@ -117,6 +122,10 @@ fun MapScreen(
         setCurrentRouteMode(routeMode)
     }
 
+    /**
+     * Эффект для загрузки маршрута при изменении selectedRouteId или routeMode.
+     * Выполняет асинхронную загрузку маршрута из репозитория и обновляет состояние карты.
+     */
     LaunchedEffect(selectedRouteId, routeMode) {
         selectedRouteId?.let { routeId ->
             isRouteLoading = true
@@ -126,6 +135,7 @@ fun MapScreen(
                     route?.let {
                         loadedRoute = it
                         if (routeMode == "view" || routeMode == "edit") {
+                            // Преобразование точек маршрута в GeoPoint для отображения на карте
                             val geoPoints = it.points.map { point ->
                                 GeoPoint(point.latitude, point.longitude)
                             }
@@ -133,7 +143,7 @@ fun MapScreen(
                             if (routeMode == "edit") {
                                 isRouteMode = true
                             }
-
+                            // Центрирование карты на первой точке маршрута
                             mapView?.controller?.setCenter(geoPoints.first())
                             mapView?.controller?.zoomTo(14.0)
                         }
@@ -147,24 +157,36 @@ fun MapScreen(
         }
     }
 
+    /**
+     * Функция обновления полилинии маршрута на карте.
+     * Удаляет старую полилинию и создает новую на основе текущих точек маршрута.
+     */
     fun updateRoutePolyline() {
         mapView?.let { view ->
+            // Удаление старой полилинии
             routePolyline?.let { view.overlays.remove(it) }
+
+            // Создание новой полилинии
             val polyline = Polyline().apply {
                 color = Color.BLUE
                 width = 10.0f
-                isGeodesic = true
+                isGeodesic = true // Использование геодезической линии (учитывает кривизну Земли)
                 setPoints(ArrayList(routePoints))
             }
 
             view.overlays.add(polyline)
             routePolyline = polyline
-            view.invalidate()
+            view.invalidate() // Принудительная перерисовка карты
         }
     }
 
+    /**
+     * Функция обновления маркеров точек маршрута.
+     * Создает маркеры с номерами, цветовой индикацией и обработкой перетаскивания.
+     */
     fun updateRouteMarkers() {
         mapView?.let { view ->
+            // Удаление старых маркеров
             routeMarkers.forEach { marker ->
                 view.overlays.remove(marker)
             }
@@ -180,12 +202,14 @@ fun MapScreen(
                     }
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
 
+                    // Определение цвета маркера в зависимости от типа точки
                     var color = when (index) {
                         0 -> Color.GREEN
                         routePoints.size - 1 -> Color.RED
                         else -> Color.BLUE
                     }
 
+                    // Создание кастомной иконки маркера с номером точки
                     val bitmap = Bitmap.createBitmap(48, 48, Bitmap.Config.ARGB_8888)
                     val canvas = Canvas(bitmap)
                     val paint = Paint().apply {
@@ -195,6 +219,7 @@ fun MapScreen(
                     }
                     canvas.drawCircle(24f, 24f, 24f, paint)
 
+                    // Добавление номера точки на маркер
                     val textPaint = Paint().apply {
                         color = Color.WHITE
                         textSize = 20f
@@ -207,10 +232,12 @@ fun MapScreen(
 
                     icon = BitmapDrawable(context.resources, bitmap)
 
-                    isDraggable = true
+                    isDraggable = true // Включение возможности перетаскивания
 
+                    // Обработчики событий перетаскивания маркера
                     setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
                         override fun onMarkerDragStart(marker: Marker) {
+                            // Запоминаем индекс перетаскиваемого маркера
                             draggedMarkerIndex = routePoints.indexOfFirst {
                                 it.latitude == marker.position.latitude &&
                                         it.longitude == marker.position.longitude
@@ -218,10 +245,12 @@ fun MapScreen(
                         }
 
                         override fun onMarkerDrag(marker: Marker) {
+                            // Обновление полилинии при перетаскивании
                             updateRoutePolyline()
                         }
 
                         override fun onMarkerDragEnd(marker: Marker) {
+                            // Обновление координат точки маршрута после перетаскивания
                             draggedMarkerIndex?.let { index ->
                                 if (index in routePoints.indices) {
                                     routePoints = routePoints.toMutableList().apply {
@@ -243,6 +272,10 @@ fun MapScreen(
         }
     }
 
+    /**
+     * Функция добавления новой точки в маршрут.
+     * Вызывается при клике на карту в режиме построения маршрута.
+     */
     fun addRoutePoint(point: GeoPoint) {
         Log.i("MapScreen", "Adding route point: (${point.latitude}, ${point.longitude})")
         routePoints = routePoints + point
@@ -250,6 +283,7 @@ fun MapScreen(
 
         updateRouteMarkers()
 
+        // Если точек достаточно для построения линии, обновляем полилинию
         if (routePoints.size >= 2) {
             updateRoutePolyline()
         }
@@ -263,16 +297,25 @@ fun MapScreen(
         }
     }
 
+    /**
+     * Функция расчета общего расстояния маршрута.
+     * Суммирует расстояния между последовательными точками маршрута.
+     */
     fun calculateRouteDistance(points: List<GeoPoint>): Double {
         var totalDistance = 0.0
         for (i in 0 until points.size - 1) {
+            // Использование метода distanceToAsDouble из OSMDroid для расчета расстояния
             totalDistance += points[i].distanceToAsDouble(points[i + 1])
         }
         return totalDistance
     }
 
+    /**
+     * Функция расчета примерного времени прохождения маршрута.
+     * Использует среднюю скорость пешехода (5 км/ч ≈ 1.3889 м/с).
+     */
     fun calculateEstimatedDuration(distance: Double): Int {
-        val averageSpeed = 1.3889
+        val averageSpeed = 1.3889 // м/с (5 км/ч)
         return (distance / averageSpeed).toInt()
     }
 
@@ -286,11 +329,16 @@ fun MapScreen(
         }
     }
 
+    /**
+     * Функция завершения построения маршрута.
+     * Создает объект Route на основе текущих точек и отображает диалог с информацией.
+     */
     fun finishRouteBuilding(isEditing: Boolean = false) {
         Log.i("MapScreen", "Finishing route building. Points: ${routePoints.size}, isEditing=$isEditing")
         if (routePoints.size >= 2) {
             scope.launch {
                 try {
+                    // Преобразование GeoPoint в RoutePoint с определением типов точек
                     val points = routePoints.mapIndexed { index, geoPoint ->
                         com.example.touristassistant.data.models.RoutePoint(
                             latitude = geoPoint.latitude,
@@ -311,6 +359,7 @@ fun MapScreen(
                     val distance = calculateRouteDistance(routePoints)
                     val duration = calculateEstimatedDuration(distance)
 
+                    // Создание объекта маршрута
                     val routeName = if (isEditing && loadedRoute != null) {
                         loadedRoute!!.name
                     } else {
@@ -403,6 +452,10 @@ fun MapScreen(
         }
     }
 
+    /**
+     * Эффект для отображения выбранного места на карте.
+     * Центрирует карту на выбранном месте и показывает его маркер.
+     */
     LaunchedEffect(selectedPlaceId, places, mapView) {
         Log.d("MapScreen", "LaunchedEffect: selectedPlaceId=$selectedPlaceId, places count=${places.size}")
         if (selectedPlaceId != null) {
@@ -410,8 +463,8 @@ fun MapScreen(
             place?.let {
                 Log.i("MapScreen", "Found selected place: ${it.name} (ID: ${it.id})")
                 val geoPoint = GeoPoint(it.latitude, it.longitude)
-                mapView?.controller?.animateTo(geoPoint)
-                mapView?.controller?.setZoom(16.0)
+                mapView?.controller?.animateTo(geoPoint) // Плавное перемещение к точке
+                mapView?.controller?.setZoom(16.0) // Установка приближения
                 viewModel.selectPlace(it)
                 Log.d("MapScreen", "Map centered on place: ${it.name}")
             } ?: run {
@@ -420,6 +473,10 @@ fun MapScreen(
         }
     }
 
+    /**
+     * Эффект для запроса разрешений при первом запуске.
+     * Если разрешения нет, показывает системный диалог запроса.
+     */
     LaunchedEffect(Unit) {
         Log.d("MapScreen", "Checking location permission on launch")
         if (!hasLocationPermission) {
@@ -1056,19 +1113,22 @@ fun Double.format(digits: Int) = "%.${digits}f".format(this)
 
 /**
  * Создает кастомный маркер для места на карте.
+ * Генерирует векторную графику с тенью, цветовой индикацией типа места и иконкой.
  *
- * @param context контекст приложения
- * @param place место для создания маркера
- * @return Drawable с иконкой маркера
+ * @param context контекст для доступа к ресурсам
+ * @param place место для которого создается маркер
+ * @return Drawable с отрисованной иконкой маркера
  */
 
 fun createCustomMarker(context: Context, place: Place): Drawable {
     val width = 96
     val height = 126
 
+    // Создание bitmap для рисования
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
 
+    // Определение цвета маркера в зависимости от типа места
     val markerColor = when (place.type) {
         PlaceType.TOURIST_ATTRACTION -> Color.RED
         PlaceType.RESTAURANT -> Color.parseColor("#FF9800")
@@ -1083,8 +1143,8 @@ fun createCustomMarker(context: Context, place: Place): Drawable {
         else -> Color.GRAY
     }
 
-    val shadowColor = Color.argb(150, 0, 0, 0)
-
+    // Рисование тени маркера (смещенной на 3 пикселя)
+    val shadowColor = Color.argb(150, 0, 0, 0) // Полупрозрачный черный
     val shadowPaint = Paint().apply {
         color = shadowColor
         isAntiAlias = true
@@ -1116,6 +1176,7 @@ fun createCustomMarker(context: Context, place: Place): Drawable {
         shadowPaint
     )
 
+    // Рисование основного тела маркера (эллипс + треугольник снизу)
     canvas.drawOval(
         centerX - 22,
         topY,
@@ -1124,6 +1185,7 @@ fun createCustomMarker(context: Context, place: Place): Drawable {
         markerPaint
     )
 
+    // Рисование треугольного указателя
     val path = android.graphics.Path()
     path.moveTo(centerX - 15, bottomY - 30)
     path.lineTo(centerX, bottomY)
@@ -1148,6 +1210,7 @@ fun createCustomMarker(context: Context, place: Place): Drawable {
         textAlign = Paint.Align.CENTER
     }
 
+    // Добавление иконки типа места в центр маркера
     val iconChar = when (place.type) {
         PlaceType.TOURIST_ATTRACTION -> "⛪"
         PlaceType.RESTAURANT -> "🍽️"
@@ -1164,6 +1227,7 @@ fun createCustomMarker(context: Context, place: Place): Drawable {
 
     canvas.drawText(iconChar, centerX, topY + 45, iconPaint)
 
+    // Добавление звезды для избранных мест
     if (place.isFavorite) {
         val starPaint = Paint().apply {
             color = Color.YELLOW

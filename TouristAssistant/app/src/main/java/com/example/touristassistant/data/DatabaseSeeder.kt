@@ -45,10 +45,12 @@ class DatabaseSeeder @Inject constructor(
             try {
                 Log.d("DatabaseSeeder", "Coroutine started for database seeding")
 
+                // Проверка наличия данных перед заполнением
                 val placesCount = placeDao.getCount()
                 Log.i("DatabaseSeeder", "Current places count in DB: $placesCount")
 
                 if (placesCount == 0) {
+                    // Генерация и вставка демонстрационных данных
                     Log.i("DatabaseSeeder", "Database is empty, seeding initial data...")
                     val initialPlaces = getDefaultPlaces()
                     Log.d("DatabaseSeeder", "Generated ${initialPlaces.size} default places")
@@ -62,6 +64,7 @@ class DatabaseSeeder @Inject constructor(
                     Log.i("DatabaseSeeder", "Database already has $placesCount places. Skipping seeding.")
                 }
 
+                // Добавление тестового маршрута
                 seedTestRoute()
                 Log.i("DatabaseSeeder", "Database seeding process completed successfully")
             } catch (e: Exception) {
